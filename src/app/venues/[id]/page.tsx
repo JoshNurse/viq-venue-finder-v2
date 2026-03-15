@@ -902,8 +902,8 @@ export default function VenueDetailPage() {
 
       {/* Re-enrich Prompt Modal */}
       {showReenrichPrompt && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
-          <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-4 space-y-4">
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-end sm:items-center justify-center">
+          <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-4 space-y-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-lg">Update Google Places Data?</h3>
               <button onClick={() => setShowReenrichPrompt(false)}>
