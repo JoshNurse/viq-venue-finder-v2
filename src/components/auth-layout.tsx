@@ -9,7 +9,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <main className={isLoginPage ? '' : 'pb-16 min-h-screen'}>{children}</main>
+      <main className={isLoginPage ? '' : 'pb-[calc(4rem+env(safe-area-inset-bottom))] min-h-screen'}>{children}</main>
       {!isLoginPage && <BottomNav />}
     </>
   );

@@ -27,7 +27,7 @@ export function BottomNav() {
   const overdueCount = taskData?.overdueCount || 0
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-border">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-border pb-[env(safe-area-inset-bottom)]">
       <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
         {tabs.map((tab) => {
           const isActive = pathname?.startsWith(tab.href)
