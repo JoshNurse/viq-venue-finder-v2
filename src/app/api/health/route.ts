@@ -30,8 +30,13 @@ export async function GET() {
     venueCount,
     dbError,
     env: {
-      DATABASE_URL: process.env.DATABASE_URL ? "(set)" : "(unset)",
+      DATABASE_URL: process.env.DATABASE_URL || "(unset)",
       NODE_ENV: process.env.NODE_ENV,
+    },
+    permissions: {
+      fileReadable: (() => { try { fs.accessSync(dbPath, fs.constants.R_OK); return true } catch { return false } })(),
+      fileWritable: (() => { try { fs.accessSync(dbPath, fs.constants.W_OK); return true } catch { return false } })(),
+      dirWritable: (() => { try { fs.accessSync(path.dirname(dbPath), fs.constants.W_OK); return true } catch { return false } })(),
     },
   });
 }
