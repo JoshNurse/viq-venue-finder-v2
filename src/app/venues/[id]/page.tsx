@@ -112,6 +112,7 @@ export default function VenueDetailPage() {
   const [taskNote, setTaskNote] = useState('')
   const [pendingStageChange, setPendingStageChange] = useState<string | null>(null)
   const [stageChangeNote, setStageChangeNote] = useState('')
+  const [showReenrichPrompt, setShowReenrichPrompt] = useState(false)
 
   // Editable business info state
   const [editingField, setEditingField] = useState<string | null>(null)
@@ -139,10 +140,31 @@ export default function VenueDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       }).then(r => r.json()),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['venue', venueId] })
       queryClient.invalidateQueries({ queryKey: ['venues'] })
       setEditingField(null)
+      if (variables.displayName !== undefined) {
+        setShowReenrichPrompt(true)
+      }
+    },
+  })
+
+  const reenrichVenue = useMutation({
+    mutationFn: () =>
+      fetch(`/api/venues/${venueId}/enrich`, {
+        method: 'POST',
+      }).then(r => {
+        if (!r.ok) return r.json().then(e => Promise.reject(e))
+        return r.json()
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['venue', venueId] })
+      queryClient.invalidateQueries({ queryKey: ['venues'] })
+      setShowReenrichPrompt(false)
+    },
+    onError: () => {
+      setShowReenrichPrompt(false)
     },
   })
 
@@ -874,6 +896,40 @@ export default function VenueDetailPage() {
             >
               {createTask.isPending ? 'Saving...' : 'Schedule Task'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Re-enrich Prompt Modal */}
+      {showReenrichPrompt && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
+          <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg">Update Google Places Data?</h3>
+              <button onClick={() => setShowReenrichPrompt(false)}>
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="text-sm text-muted-foreground">
+              You changed the venue name. Would you like to re-pull data from Google Places to get an updated address, phone, rating, and website?
+            </p>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowReenrichPrompt(false)}
+                className="flex-1 py-3 rounded-lg border font-medium text-sm"
+              >
+                No thanks
+              </button>
+              <button
+                onClick={() => reenrichVenue.mutate()}
+                disabled={reenrichVenue.isPending}
+                className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-medium text-sm disabled:opacity-50"
+              >
+                {reenrichVenue.isPending ? 'Fetching...' : 'Yes, update'}
+              </button>
+            </div>
           </div>
         </div>
       )}
