@@ -1,0 +1,144 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Venue {
+  id                String   @id @default(cuid())
+  siteName          String   // raw name from CSV
+  displayName       String   // cleaned name
+  sitePrefix        String?  // "(S1)", "(S2)" etc
+  siteType          String   // CLUB or HOTEL
+  approvedEgms      Int      @default(0)
+  operationalEgms   Int?
+  sa4Region         String?
+  sa2Region         String?
+  lgaRegion         String?
+  authorityRegion   String?
+  approvalRef       String
+
+  // Location
+  latitude          Float?
+  longitude         Float?
+  streetAddress     String?
+  geocodeSource     String?  // NOMINATIM, SA2_CENTROID, MANUAL, ABR, GOOGLE
+  geocodeConfidence String?  // HIGH, MEDIUM, LOW
+
+  // CRM fields
+  posSystem         String?
+  lmo               String?  // MAXGAMING or ODYSSEY
+  venuePhone        String?
+  notes             String?
+
+  // ABR enrichment
+  abn               String?
+  acn               String?
+  tradingName       String?
+  businessName      String?
+
+  // Google Business enrichment
+  googlePlaceId     String?
+  googleAddress     String?
+  googlePhone       String?
+  googleRating      Float?
+  googleWebsite     String?
+
+  // Pipeline
+  pipelineStage     String   @default("NOT_CONTACTED")
+
+  // Tracking
+  csvLastSeen       DateTime?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  contacts          Contact[]
+  activities        Activity[]
+  tasks             Task[]
+
+  @@unique([approvalRef, sitePrefix])
+  @@index([pipelineStage])
+  @@index([siteType])
+  @@index([sa2Region])
+  @@index([isActive])
+}
+
+model Contact {
+  id       String @id @default(cuid())
+  venueId  String
+  venue    Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  role     String // CEO_GM, GAMING_MANAGER, MARKETING_MANAGER, OPERATIONS_MANAGER
+  name     String?
+  email    String?
+  mobile   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([venueId, role])
+}
+
+model Activity {
+  id       String   @id @default(cuid())
+  venueId  String
+  venue    Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  type     String   // NOTE, CALL, EMAIL, VISIT, STAGE_CHANGE, DATA_IMPORT
+  note     String?
+  createdAt DateTime @default(now())
+
+  @@index([venueId])
+}
+
+model PosOption {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  isDefault Boolean @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  venueId     String
+  venue       Venue    @relation(fields: [venueId], references: [id])
+  type        String   @default("FOLLOW_UP") // FOLLOW_UP, CALL_BACK, SEND_PROPOSAL, SCHEDULE_DEMO, OTHER
+  dueDate     DateTime
+  note        String?
+  completed   Boolean  @default(false)
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([venueId])
+  @@index([dueDate])
+  @@index([completed])
+}
+
+model ImportLog {
+  id             String   @id @default(cuid())
+  startedAt      DateTime @default(now())
+  completedAt    DateTime?
+  rowsProcessed  Int      @default(0)
+  venuesCreated  Int      @default(0)
+  venuesUpdated  Int      @default(0)
+  errors         String?  // JSON array of error messages
+  status         String   @default("RUNNING") // RUNNING, COMPLETED, FAILED
+}
+
+model EnrichmentLog {
+  id            String    @id @default(cuid())
+  type          String    // ABR, GOOGLE_PLACES, NOMINATIM
+  status        String    @default("RUNNING") // RUNNING, COMPLETED, FAILED, CANCELLED
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  totalVenues   Int       @default(0)
+  processed     Int       @default(0)
+  enriched      Int       @default(0)
+  skipped       Int       @default(0)
+  failed        Int       @default(0)
+  errors        String?   // JSON array of error messages
+  currentVenue  String?
+}
