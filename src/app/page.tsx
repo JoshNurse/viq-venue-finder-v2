@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation'
+
 export default function Home() {
-  return <h1>Hello VIQ</h1>;
+  redirect('/venues')
 }
